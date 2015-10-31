@@ -122,10 +122,33 @@ local function reg_waterican(def)
 	local toolname = MODNAME .. ":waterican_" .. def.material
 	minetest.register_tool(toolname, {
 		description = "Waterican" .. matname,
+		liquids_pointable = true,
 		inventory_image = img,
 		wield_image = img .. "^[transformFX",
 		wield_scale = {x = 1, y = 1, z = 6},
 		on_use = function(itemstack, user, pointed_thing)
+			local wear = itemstack:get_wear()
+
+			-- Refill if pointing at water and not already full
+			if pointed_thing.type == "node" then
+				local node = minetest.get_node(pointed_thing.under)
+				-- Don't check for default, since Watericans that
+				-- wear out are only available if default is.
+				if node.name == "default:water_source" then
+					if wear > 0 then
+						itemstack:set_wear(0)
+						minetest.set_node(pointed_thing.under, {name="air"})
+						return itemstack
+					end
+					return
+				end
+			end
+
+			-- Worn out = no more water.
+			if wear == 65534 then
+				return
+			end
+
 			if pointed_thing.type == "node" then
 				p = pointed_thing.under
 				if user:get_player_control().sneak then
@@ -135,11 +158,14 @@ local function reg_waterican(def)
 				end
 			end
 			if def.uses then
+				local wearadd = 0
 				if user:get_player_control().sneak then
-					itemstack:add_wear(65535/(def.uses*9)+1)
+					wearadd = 65534/(def.uses*9)+1
 				else
-					itemstack:add_wear(65535/def.uses+1)
+					wearadd = 65534/def.uses+1
 				end
+				wearadd = math.min(wearadd, 65534-wear)
+				itemstack:add_wear(wearadd)
 				return itemstack
 			end
 		end
