@@ -31,6 +31,8 @@ The bucket is **not** consumed, only the water it contains is.
 
 * Wet soils
 * Speed up crop growth
+* Grow cactus and papyrus
+* Grow trees
 * Spread grass
 * Convert dry grass to normal grass
 * Put out fires
