@@ -2,7 +2,7 @@ local MODNAME = "waterican"
 
 --
 -- Waterican (by gravgun)
--- v1.0
+-- v1.2
 -- A mod that add watering cans that make crops grow faster.
 --
 -- LICENSE: GPLv3+
@@ -22,10 +22,16 @@ local function waternode(user, pos)
 		return -- dafuq?
 	end
 
-	-- Soil wetting
+	-- General soil wetting
 	local soil = nodedef.soil
 	if soil and node.name == soil.dry then
 		minetest.set_node(pos, {name=soil.wet})
+		return
+	end
+
+	-- Farming soil wetting (compatibility with Farming Redo)
+	if node.name == "farming:soil" then
+		minetest.set_node(pos, {name="farming:soil_wet"})
 		return
 	end
 
@@ -60,6 +66,18 @@ local function waternode(user, pos)
 		return
 	end
 
+	-- Cactus growth
+	if node.name == "default:cactus" then
+		default.grow_cactus(pos, minetest.get_node(pos))
+		return
+	end
+
+	-- Papyrus growth
+	if node.name == "default:papyrus" then
+		default.grow_papyrus(pos, minetest.get_node(pos))
+		return
+	end
+
 	-- Grow grass on dirt
 	-- Convery dry grass to grass
 	if (node.name == "default:dirt" and minetest.find_node_near(pos, 1, {"default:dirt_with_grass"}))
@@ -82,6 +100,54 @@ local function waternode(user, pos)
 			{pos = pos, max_hear_distance = 16, gain = 0.25})
 		return
 	end
+
+	-- Tree growth
+	if math.random() > 0.9 then
+		-- The code in this `if` statement is copied from the `default` mod, therefore is LGPLv2.1+.
+		-- If Minetest coredevs had the lil' idea to plan ahead, they would have **named** ABMs
+		-- so we can reuse them OR added a way to force ABMs to trigger on certain nodes.
+		-- But no, they seem way too dumb for that simple shit.
+		local node_under = minetest.get_node_or_nil({x = pos.x, y = pos.y - 1, z = pos.z})
+		if not node_under then
+			return
+		end
+		local name_under = node_under.name
+		local is_soil = minetest.get_item_group(name_under, "soil")
+		if is_soil == 0 then
+			return
+		end
+
+		local mapgen = minetest.get_mapgen_params().mgname
+		if node.name == "default:sapling" then
+			minetest.log("action", "A sapling grows into a tree at "..
+				minetest.pos_to_string(pos))
+			if mapgen == "v6" then
+				default.grow_tree(pos, random(1, 4) == 1)
+			else
+				default.grow_new_apple_tree(pos)
+			end
+		elseif node.name == "default:junglesapling" then
+			minetest.log("action", "A jungle sapling grows into a tree at "..
+				minetest.pos_to_string(pos))
+			if mapgen == "v6" then
+				default.grow_jungle_tree(pos)
+			else
+				default.grow_new_jungle_tree(pos)
+			end
+		elseif node.name == "default:pine_sapling" then
+			minetest.log("action", "A pine sapling grows into a tree at "..
+				minetest.pos_to_string(pos))
+			if mapgen == "v6" then
+				default.grow_pine_tree(pos)
+			else
+				default.grow_new_pine_tree(pos)
+			end
+		elseif node.name == "default:acacia_sapling" then
+			minetest.log("action", "An acacia sapling grows into a tree at "..
+				minetest.pos_to_string(pos))
+			default.grow_new_acacia_tree(pos)
+		end
+	end
 end
 
 local function water(user, minp, maxp, chance)
@@ -94,7 +160,7 @@ local function water(user, minp, maxp, chance)
 			end
 		end
 	end
-	local particle_count = math.random(2, 6) * (maxp.x-minp.x+1) * (maxp.z-minp.z+1)
+	local particle_count = math.random(1, 4) * (maxp.x-minp.x+1) * (maxp.z-minp.z+1)
 	for _=0,particle_count do
 		minetest.add_particle({
 			pos = {x = rr(minp.x, maxp.x), y = maxp.y + 0.7, z = rr(minp.z, maxp.z) },
@@ -191,7 +257,7 @@ if default then
 			})
 		end
 	end
-	reg_craft(reg_waterican({material = "diamond", materialname = "Diamond", color = "#00FFFF", uses = 60, chance = 0.9}),
+	reg_craft(reg_waterican({material = "diamond", materialname = "Diamond", color = "#00FFFF", uses = 60, chance = 0.8}),
 	  "default:diamond")
 	reg_craft(reg_waterican({material = "mese", materialname = "Mese", color = "#FFFF00", uses = 50, chance = 0.7}),
 	  "default:mese_crystal")
