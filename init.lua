@@ -247,7 +247,7 @@ if default then
 			minetest.register_craft({
 				output = out,
 				recipe = {
-					{"", " ", item},
+					{"", "", item},
 					{item, "bucket:bucket_water", item},
 					{"", item, ""}
 				},
